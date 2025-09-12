@@ -1,0 +1,35 @@
+server:
+  port: 8181
+
+spring:
+  application:
+    name: ai-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/devmatch
+    username: devmatch
+    password: devmatch
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  ai:
+    openai:
+      api-key: ${TOGETHER_API_KEY:changeme}
+      base-url: https://api.together.xyz/v1
+      chat:
+        options:
+          model: meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo
+      embedding:
+        options:
+          model: snowflake/arctic-embed-l-v2.0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+
