@@ -1,4 +1,4 @@
-package com.devmatch.ai.rag.domain;
+package com.devmatch.ai.domain;
 
 import java.util.Map;
 

@@ -1,6 +1,6 @@
-package com.devmatch.ai.rag.port;
+package com.devmatch.ai.ports;
 
-import com.devmatch.ai.rag.domain.RagChunk;
+import com.devmatch.ai.domain.RagChunk;
 import java.util.List;
 import java.util.Map;
 

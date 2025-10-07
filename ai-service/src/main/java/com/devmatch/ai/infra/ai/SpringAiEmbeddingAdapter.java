@@ -1,6 +1,6 @@
-package com.devmatch.ai.rag.infra;
+package com.devmatch.ai.infra.ai;
 
-import com.devmatch.ai.rag.port.EmbeddingPort;
+import com.devmatch.ai.ports.EmbeddingPort;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -11,7 +11,7 @@ public class SpringAiEmbeddingAdapter implements EmbeddingPort {
   private final String modelName;
 
   public SpringAiEmbeddingAdapter(EmbeddingModel model,
-                                  @Value("${spring.ai.embedding.options.model}") String modelName) {
+                                  @Value("${spring.ai.openai.embedding.options.model}") String modelName) {
     this.model = model;
     this.modelName = modelName;
   }

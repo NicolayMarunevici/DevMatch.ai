@@ -1,16 +1,14 @@
-package com.devmatch.ai.usecase;
+package com.devmatch.ai.util;
 
-import com.devmatch.ai.rag.domain.RagChunk;
+import com.devmatch.ai.domain.RagChunk;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-// merging of vector and FTS lists (RRF)
+/** Reciprocal Rank Fusion: score = sum(1/(k + rank(list_i, id))). */
 public class HybridRanker {
-
-  // Hybrid is more power than simple vector. RRF - more simple and effective
-  static List<RagChunk> fuse(List<RagChunk> vec, List<RagChunk> fts, int limit) {
+  public static List<RagChunk> fuse(List<RagChunk> vec, List<RagChunk> fts, int limit) {
     int k = 60; // сглаживание
     Map<String, Double> score = new HashMap<>();
     rank(vec).forEach((id, r) -> score.merge(id, 1.0/(k+r), Double::sum));

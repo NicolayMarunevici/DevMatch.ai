@@ -1,6 +1,4 @@
-package com.devmatch.ai.api.dto;
-
-import com.devmatch.ai.domain.MatchResult;
+package com.devmatch.ai.domain;
 
 public class Mappers {
   private Mappers() {}

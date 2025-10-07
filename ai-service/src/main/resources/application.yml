@@ -5,9 +5,9 @@ spring:
   application:
     name: ai-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/devmatch
-    username: devmatch
-    password: devmatch
+    url: jdbc:postgresql://localhost:5532/devmatch
+    username: postgres
+    password: postgres
   jpa:
     hibernate:
       ddl-auto: validate
@@ -15,14 +15,15 @@ spring:
     enabled: true
   ai:
     openai:
-      api-key: ${TOGETHER_API_KEY:changeme}
+      api-key: env_var
       base-url: https://api.together.xyz/v1
       chat:
         options:
-          model: meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo
+          model: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+        completions-path: /chat/completions
       embedding:
         options:
-          model: snowflake/arctic-embed-l-v2.0
+          model: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
 
 management:
   endpoints:

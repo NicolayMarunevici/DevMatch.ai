@@ -1,4 +1,4 @@
-package com.devmatch.ai.api.dto;
+package com.devmatch.ai.domain;
 
 import java.util.Map;
 

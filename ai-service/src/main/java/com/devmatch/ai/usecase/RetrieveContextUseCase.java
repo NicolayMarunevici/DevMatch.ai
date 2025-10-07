@@ -1,8 +1,9 @@
-package com.devmatch.ai.rag.usecase;
+package com.devmatch.ai.usecase;
 
-import com.devmatch.ai.rag.domain.RagChunk;
-import com.devmatch.ai.rag.port.EmbeddingPort;
-import com.devmatch.ai.rag.port.RagRepository;
+import com.devmatch.ai.domain.RagChunk;
+import com.devmatch.ai.ports.EmbeddingPort;
+import com.devmatch.ai.ports.RagRepository;
+import com.devmatch.ai.util.HybridRanker;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;

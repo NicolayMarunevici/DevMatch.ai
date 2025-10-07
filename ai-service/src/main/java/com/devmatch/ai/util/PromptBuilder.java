@@ -1,13 +1,13 @@
-package com.devmatch.ai.rag.usecase;
+package com.devmatch.ai.util;
 
-import com.devmatch.ai.rag.domain.RagChunk;
+import com.devmatch.ai.domain.RagChunk;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /** убирает хрупкость — всегда просим строгий JSON и управляем длиной контекста. */
 public class PromptBuilder {
 
-  static String system(){
+  public static String system(){
     return """
       Ты — ассистент по найму. Отвечай ТОЛЬКО на основе CONTEXT.
       Верни строго JSON без лишнего текста:
@@ -16,7 +16,7 @@ public class PromptBuilder {
     """;
   }
 
-  static String user(List<RagChunk> ctx, String task) {
+  public static String user(List<RagChunk> ctx, String task) {
     // обрезаем контекст до разумной длины (≈ токен-бюджет)
     String contextBlock = ctx.stream()
         .map(c -> "### " + c.id() + "\n" + truncate(c.text(), 1800))

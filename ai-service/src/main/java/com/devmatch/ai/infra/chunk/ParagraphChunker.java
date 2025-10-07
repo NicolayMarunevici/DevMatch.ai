@@ -1,13 +1,12 @@
-package com.devmatch.ai.rag.infra;
+package com.devmatch.ai.infra.chunk;
 
-import com.devmatch.ai.rag.domain.RagChunk;
-import com.devmatch.ai.rag.port.Chunker;
+import com.devmatch.ai.domain.RagChunk;
+import com.devmatch.ai.ports.Chunker;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 // Separates text to chunks, glues up to maxChars, does overlap

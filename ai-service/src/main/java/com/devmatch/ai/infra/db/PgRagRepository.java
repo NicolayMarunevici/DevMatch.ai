@@ -1,8 +1,10 @@
-package com.devmatch.ai.rag.infra;
+package com.devmatch.ai.infra.db;
 
-import com.devmatch.ai.rag.domain.RagChunk;
-import com.devmatch.ai.rag.port.RagRepository;
+import com.devmatch.ai.domain.RagChunk;
+import com.devmatch.ai.ports.RagRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -28,7 +30,8 @@ public class PgRagRepository implements RagRepository {
           VALUES (?,?,?,?,?, ?::vector, ?, ?::jsonb, ?)
           ON CONFLICT (id) DO UPDATE SET text=EXCLUDED.text, meta=EXCLUDED.meta, vector=EXCLUDED.vector, model=EXCLUDED.model, dim=EXCLUDED.dim
         """,
-          c.id(), c.ownerType(), c.ownerId(), model, vector.length, vec, c.text(), metaJson, Timestamp.from(Instant.now()));
+          c.id(), c.ownerType(), c.ownerId(), model, vector.length, vec, c.text(), metaJson, Timestamp.from(
+              Instant.now()));
     } catch (Exception e) {
       throw new IllegalStateException("RAG insert failed", e);
     }

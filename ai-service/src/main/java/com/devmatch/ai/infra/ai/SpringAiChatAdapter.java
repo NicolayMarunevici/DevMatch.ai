@@ -1,6 +1,6 @@
-package com.devmatch.ai.rag.infra;
+package com.devmatch.ai.infra.ai;
 
-import com.devmatch.ai.rag.port.ChatPort;
+import com.devmatch.ai.ports.ChatPort;
 import java.util.List;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;

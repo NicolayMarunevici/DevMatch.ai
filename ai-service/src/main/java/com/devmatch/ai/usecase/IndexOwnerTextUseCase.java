@@ -1,14 +1,14 @@
 package com.devmatch.ai.usecase;
 
-import com.devmatch.ai.rag.domain.RagChunk;
-import com.devmatch.ai.rag.port.Chunker;
-import com.devmatch.ai.rag.port.EmbeddingPort;
-import com.devmatch.ai.rag.port.RagRepository;
+import com.devmatch.ai.domain.RagChunk;
+import com.devmatch.ai.ports.Chunker;
+import com.devmatch.ai.ports.EmbeddingPort;
+import com.devmatch.ai.ports.RagRepository;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 
-// Separate the text --> embedding of chunks --> write to DB
+/** Разрезает текст → эмбеддит чанки → пишет в БД (перезапись owner). */
 @Service
 public class IndexOwnerTextUseCase {
   private final Chunker chunker;
@@ -16,7 +16,9 @@ public class IndexOwnerTextUseCase {
   private final RagRepository repo;
 
   public IndexOwnerTextUseCase(Chunker chunker, EmbeddingPort embed, RagRepository repo) {
-    this.chunker = chunker; this.embed = embed; this.repo = repo;
+    this.chunker = chunker;
+    this.embed = embed;
+    this.repo = repo;
   }
 
   public void reindex(String ownerType, String ownerId, String rawText, Map<String,String> meta) {

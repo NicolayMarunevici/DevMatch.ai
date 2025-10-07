@@ -1,7 +1,7 @@
-package com.devmatch.ai.controller;
+package com.devmatch.ai.api;
 
-import com.devmatch.ai.api.dto.Mappers;
-import com.devmatch.ai.api.dto.MatchResultDto;
+import com.devmatch.ai.domain.Mappers;
+import com.devmatch.ai.domain.MatchResultDto;
 import com.devmatch.ai.usecase.MatchUseCase;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

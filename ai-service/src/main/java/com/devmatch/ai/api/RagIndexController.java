@@ -1,6 +1,6 @@
-package com.devmatch.ai.rag.api;
+package com.devmatch.ai.api;
 
-import com.devmatch.ai.rag.usecase.IndexOwnerTextUseCase;
+import com.devmatch.ai.usecase.IndexOwnerTextUseCase;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;

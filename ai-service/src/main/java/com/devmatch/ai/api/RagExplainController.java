@@ -1,7 +1,7 @@
-package com.devmatch.ai.rag.api;
+package com.devmatch.ai.api;
 
 
-import com.devmatch.ai.rag.usecase.ExplainWithRagUseCase;
+import com.devmatch.ai.usecase.ExplainWithRagUseCase;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

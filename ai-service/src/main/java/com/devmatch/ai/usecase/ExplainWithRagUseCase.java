@@ -1,8 +1,10 @@
-package com.devmatch.ai.rag.usecase;
+package com.devmatch.ai.usecase;
 
 
-import com.devmatch.ai.rag.domain.RagChunk;
-import com.devmatch.ai.rag.port.ChatPort;
+import com.devmatch.ai.domain.RagChunk;
+import com.devmatch.ai.ports.ChatPort;
+import com.devmatch.ai.usecase.RetrieveContextUseCase;
+import com.devmatch.ai.util.PromptBuilder;
 import java.util.List;
 import org.springframework.stereotype.Service;
 

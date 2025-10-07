@@ -1,4 +1,4 @@
-package com.devmatch.ai.rag.port;
+package com.devmatch.ai.ports;
 
 // Generation LLM response
 public interface ChatPort {

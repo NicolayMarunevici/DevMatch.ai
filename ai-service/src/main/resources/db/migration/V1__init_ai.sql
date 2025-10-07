@@ -23,3 +23,26 @@ CREATE TABLE IF NOT EXISTS explanations (
                                             bullets    jsonb NOT NULL,
                                             created_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS rag_chunks (
+                                          id         TEXT PRIMARY KEY,              -- "u:<userId>:<n>" / "v:<vacancyId>:<n>" / "d:<docId>:<n>"
+                                          owner_type TEXT NOT NULL,                 -- USER | VACANCY | DOC
+                                          owner_id   TEXT NOT NULL,
+                                          model      TEXT NOT NULL,
+                                          dim        INT  NOT NULL,
+                                          vector     vector(1024) NOT NULL,         -- ВАЖНО: подгони под размер модели эмбеддингов
+                                          text       TEXT NOT NULL,
+                                          meta       jsonb NOT NULL DEFAULT '{}'::jsonb,
+                                          created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ANN индекс под cosine
+CREATE INDEX IF NOT EXISTS idx_rag_chunks_ivf
+    ON rag_chunks USING ivfflat (vector vector_cosine_ops) WITH (lists = 150);
+
+-- Индекс для фильтрации по владельцу
+CREATE INDEX IF NOT EXISTS idx_rag_chunks_owner ON rag_chunks(owner_type, owner_id);
+
+-- Полнотекстовый индекс (простой словарь)
+CREATE INDEX IF NOT EXISTS idx_rag_chunks_fts
+    ON rag_chunks USING GIN (to_tsvector('simple', text));
