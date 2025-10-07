@@ -4,7 +4,6 @@ import com.devmatch.ai.domain.MatchCandidate;
 import com.devmatch.ai.domain.MatchResult;
 import com.devmatch.ai.ports.RulesEngine;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +21,7 @@ public class SimpleRulesEngine implements RulesEngine {
     return initial.stream().map(c -> {
       double base = 0.80 * c.vectorScore();
 //      double skill = 0.20 * 0.60; // пример: 60% пересечения must-have
-      double geo   = 0.20 * 1.00; // пример: гео ок
+      double geo = 0.20; // пример: гео ок
       double score = clamp(base + geo);
 
       Map<String, Double> feats = new LinkedHashMap<>();
@@ -34,5 +33,7 @@ public class SimpleRulesEngine implements RulesEngine {
     }).sorted(Comparator.comparingDouble(MatchResult::finalScore).reversed()).toList();
   }
 
-  private static double clamp(double v) { return Math.max(0, Math.min(1, v)); }
+  private static double clamp(double v) {
+    return Math.max(0, Math.min(1, v));
+  }
 }

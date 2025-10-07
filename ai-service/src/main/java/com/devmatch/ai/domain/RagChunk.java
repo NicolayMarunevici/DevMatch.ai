@@ -9,4 +9,5 @@ public record RagChunk(
     String ownerId, // userId / vacancyId
     String text, // fragment of tokens (300-800 token)
     Map<String, String> meta // язык, стек, секция
-) {}
+) {
+}

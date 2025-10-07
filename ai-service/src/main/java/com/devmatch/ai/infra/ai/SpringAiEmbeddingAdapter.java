@@ -11,7 +11,8 @@ public class SpringAiEmbeddingAdapter implements EmbeddingPort {
   private final String modelName;
 
   public SpringAiEmbeddingAdapter(EmbeddingModel model,
-                                  @Value("${spring.ai.openai.embedding.options.model}") String modelName) {
+                                  @Value("${spring.ai.openai.embedding.options.model}")
+                                  String modelName) {
     this.model = model;
     this.modelName = modelName;
   }
@@ -20,9 +21,7 @@ public class SpringAiEmbeddingAdapter implements EmbeddingPort {
   public float[] embed(String text) {
     var doubles = model.embed(text);
     var out = new float[doubles.length];
-    for (int i = 0; i < out.length; i++) {
-      out[i] = doubles[i];
-    }
+    System.arraycopy(doubles, 0, out, 0, out.length);
     return out;
   }
 

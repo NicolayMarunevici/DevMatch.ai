@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Зачем: единственный вход для (ре)индексации профилей/JD/доков в RAG.*/
+/**
+ * Зачем: единственный вход для (ре)индексации профилей/JD/доков в RAG.
+ */
 @RestController
 @RequestMapping("/api/ai/rag/index")
 public class RagIndexController {
@@ -24,7 +26,8 @@ public class RagIndexController {
       @NotBlank String ownerId,
       @NotBlank String text,
       Map<String, String> meta
-  ) {}
+  ) {
+  }
 
   @PostMapping
   public ResponseEntity<Void> index(@RequestBody IndexRequest req) {

@@ -4,7 +4,6 @@ import com.devmatch.ai.domain.MatchCandidate;
 import com.devmatch.ai.domain.MatchResult;
 import com.devmatch.ai.ports.KnnRepository;
 import com.devmatch.ai.ports.RulesEngine;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +14,7 @@ public class MatchUseCase {
 
   private final KnnRepository knnRepository;
   private final RulesEngine rulesEngine;
-//  private final CachePort cachePort;
+  //  private final CachePort cachePort;
   private final int overfetch;
 
   public MatchUseCase(KnnRepository knnRepository, RulesEngine rulesEngine,
@@ -26,8 +25,9 @@ public class MatchUseCase {
   }
 
   /*Coordinate matching scenarios. First KNN, then rules, then reducing by k*/
-  public List<MatchResult> matchForUser(String userId, int k){
-    List<KnnRepository.Candidate> initial = knnRepository.topKForUser(userId, k * Math.max(1, overfetch));
+  public List<MatchResult> matchForUser(String userId, int k) {
+    List<KnnRepository.Candidate> initial =
+        knnRepository.topKForUser(userId, k * Math.max(1, overfetch));
     List<MatchCandidate> domainCandidates = initial.stream()
         .map(c -> new MatchCandidate(c.id(), c.vectoreStore()))
         .collect(Collectors.toList());

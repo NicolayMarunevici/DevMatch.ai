@@ -18,8 +18,11 @@ public class RagExplainController {
     this.useCase = useCase;
   }
 
-  public record ExplainRequest(@NotBlank String userId, @NotBlank String vacancyId) {}
-  public record ExplainResponse(String json) {}
+  public record ExplainRequest(@NotBlank String userId, @NotBlank String vacancyId) {
+  }
+
+  public record ExplainResponse(String json) {
+  }
 
   @PostMapping("/match")
   public ResponseEntity<ExplainResponse> explain(@RequestBody ExplainRequest req) {

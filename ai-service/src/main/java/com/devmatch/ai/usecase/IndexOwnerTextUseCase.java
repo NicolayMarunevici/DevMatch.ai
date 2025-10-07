@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 
-/** Разрезает текст → эмбеддит чанки → пишет в БД (перезапись owner). */
+/**
+ * Разрезает текст → эмбеддит чанки → пишет в БД (перезапись owner).
+ */
 @Service
 public class IndexOwnerTextUseCase {
   private final Chunker chunker;
@@ -21,7 +23,7 @@ public class IndexOwnerTextUseCase {
     this.repo = repo;
   }
 
-  public void reindex(String ownerType, String ownerId, String rawText, Map<String,String> meta) {
+  public void reindex(String ownerType, String ownerId, String rawText, Map<String, String> meta) {
     repo.deleteByOwner(ownerType, ownerId);
     List<RagChunk> chunks = chunker.chunk(ownerType, ownerId, rawText, meta);
     for (RagChunk c : chunks) {
