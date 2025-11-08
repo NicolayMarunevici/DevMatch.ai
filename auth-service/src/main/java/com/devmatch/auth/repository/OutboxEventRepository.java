@@ -27,11 +27,11 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query(value = """
-  UPDATE outbox_events
-     SET published = TRUE
-   WHERE id = :id
-     AND published = FALSE
-""", nativeQuery = true)
+        UPDATE outbox_events
+           SET published = TRUE
+         WHERE id = :id
+           AND published = FALSE
+      """, nativeQuery = true)
   int markPublished(@Param("id") UUID id);
 
   @Query(value = """

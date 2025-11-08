@@ -35,16 +35,6 @@ public class UserController {
     this.currentUserProvider = currentUserProvider;
   }
 
-//  @ResponseStatus(HttpStatus.CREATED)
-//  @PostMapping
-//  public void createUser(@RequestBody CreateUserProfileRequest request) {
-//    System.out.println("Profile incoming: " + request);
-//    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-//    System.out.println("Authenticated: " + auth.isAuthenticated());
-//    System.out.println("Authorities: " + auth.getAuthorities());
-//    userService.createUserProfile(request);
-//  }
-
   @GetMapping("/{id}")
   public UserDto getUser(@PathVariable Long id) {
     return userService.getUserById(id);
