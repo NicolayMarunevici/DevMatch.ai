@@ -21,15 +21,16 @@ public class PromptBuilder {
   public static String user(List<RagChunk> ctx, String task) {
     // обрезаем контекст до разумной длины (≈ токен-бюджет)
     String contextBlock = ctx.stream()
-        .map(c -> "### " + c.id() + "\n" + truncate(c.text(), 1800))
-        .collect(Collectors.joining("\n\n"));
-    return """
-          CONTEXT:
-          %s
+        .map(c -> c.id() + " :: " + truncate(c.text(), 900))
+        .collect(Collectors.joining("\n---\n"));
 
-          TASK:
-          %s
-        """.formatted(contextBlock, task);
+    return """
+      CONTEXT:
+      %s
+
+      TASK:
+      %s
+    """.formatted(contextBlock, task);
   }
 
   private static String truncate(String s, int max) {

@@ -13,6 +13,7 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+    clean-disabled: false
   ai:
     openai:
       api-key: env_var
@@ -20,6 +21,8 @@ spring:
       chat:
         options:
           model: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+          temperature: 0.2
+          max-tokens: 1024
         completions-path: /chat/completions
       embedding:
         options:
@@ -34,3 +37,9 @@ management:
     sampling:
       probability: 1.0
 
+app:
+  ai:
+    embedding:
+      expected-dim: 3072
+  security:
+    disabled: true

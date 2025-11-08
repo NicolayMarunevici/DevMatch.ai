@@ -1,0 +1,9 @@
+Vacancy --> Hexagonal Architecture
+
+Add Architecture Patterns
+
+Add Design Patterns
+
+Deploy app to AWS
+
+Redis Cache

@@ -1,6 +1,7 @@
 package com.devmatch.ai.api;
 
 
+import com.devmatch.ai.domain.Explanation;
 import com.devmatch.ai.usecase.ExplainWithRagUseCase;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
@@ -21,12 +22,10 @@ public class RagExplainController {
   public record ExplainRequest(@NotBlank String userId, @NotBlank String vacancyId) {
   }
 
-  public record ExplainResponse(String json) {
-  }
 
   @PostMapping("/match")
-  public ResponseEntity<ExplainResponse> explain(@RequestBody ExplainRequest req) {
-    String json = useCase.explainUserVacancy(req.userId(), req.vacancyId());
-    return ResponseEntity.ok(new ExplainResponse(json)); // JSON summary/bullets/citations
+  public Explanation explain(@RequestBody ExplainRequest req) {
+    // JSON summary/bullets/citations
+    return useCase.explainUserVacancy(req.userId(), req.vacancyId());
   }
 }

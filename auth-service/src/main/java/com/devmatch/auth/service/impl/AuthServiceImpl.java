@@ -1,108 +1,93 @@
 package com.devmatch.auth.service.impl;
 
-import com.devmatch.auth.dto.AuthResponse;
-import com.devmatch.auth.dto.CreateUserProfileRequest;
 import com.devmatch.auth.dto.LoginRequest;
 import com.devmatch.auth.dto.RegisterRequest;
-import com.devmatch.auth.dto.RoleEnum;
-import com.devmatch.auth.model.Provider;
-import com.devmatch.auth.model.Role;
+import com.devmatch.auth.dto.UserCreatedEvent;
 import com.devmatch.auth.model.User;
-import com.devmatch.auth.repository.RoleRepository;
+import com.devmatch.auth.outbox.OutboxPublisher;
+import com.devmatch.auth.outbox.OutboxService;
 import com.devmatch.auth.repository.UserRepository;
 import com.devmatch.auth.security.JwtTokenProvider;
 import com.devmatch.auth.service.AuthService;
-import com.devmatch.auth.service.UserProfileClient;
+import com.devmatch.auth.service.UserDomainService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class AuthServiceImpl implements AuthService {
   private final UserRepository userRepository;
-  private final RoleRepository roleRepository;
-  private final PasswordEncoder passwordEncoder;
+  private final UserDomainService userDomainService;
+  private final OutboxService outboxService;
+  private final OutboxPublisher outboxPublisher;
   private final AuthenticationManager authenticationManager;
   private final JwtTokenProvider jwtTokenProvider;
 
-  private final UserProfileClient userProfileClient;
-
   private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
-  public AuthServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
-                         PasswordEncoder passwordEncoder,
+  private static final String TOPIC_USER_CREATED = "devmatch.user.created.v1";
+
+  public AuthServiceImpl(UserRepository userRepository, UserDomainService userDomainService,
+                         OutboxService outboxService, OutboxPublisher outboxPublisher,
                          AuthenticationManager authenticationManager,
-                         JwtTokenProvider jwtTokenProvider, UserProfileClient userProfileClient) {
+                         JwtTokenProvider jwtTokenProvider) {
     this.userRepository = userRepository;
-    this.roleRepository = roleRepository;
-    this.passwordEncoder = passwordEncoder;
+    this.userDomainService = userDomainService;
+    this.outboxService = outboxService;
+    this.outboxPublisher = outboxPublisher;
     this.authenticationManager = authenticationManager;
     this.jwtTokenProvider = jwtTokenProvider;
-    this.userProfileClient = userProfileClient;
   }
 
+  @Transactional
   @Override
   public String register(RegisterRequest request, HttpServletResponse response) {
-    if (userRepository.existsByEmail(request.getEmail())) {
-      throw new RuntimeException("User already registered");
-    }
 
-    Set<RoleEnum> roleEnum = request.getRoles() != null ? request.getRoles() : Set.of(RoleEnum.ROLE_CANDIDATE);
-    Set<Role> role = roleRepository.findByNameIn(roleEnum);
-
-    if(role == null){
-      throw new RuntimeException("Role not found: " + roleEnum);
-    }
-
-    User user = new User();
-    user.setEmail(request.getEmail());
-    user.setFirstName(request.getFirstName());
-    user.setLastName(request.getLastName());
-    user.setPassword(passwordEncoder.encode(request.getPassword()));
-    user.setRoles(role);
-    user.setProvider(Provider.NONE);
-    user.setEnabled(true);
-    user.setLocked(false);
-
-    userRepository.save(user);
-
-    CreateUserProfileRequest profile = new CreateUserProfileRequest();
-    profile.setId(user.getId());
-    profile.setEmail(user.getEmail());
-    profile.setFirstName(user.getFirstName());
-    profile.setLastName(user.getLastName());
-    profile.setRole(
-        user.getRoles()
-            .stream()
-            .map(e -> e.getName().name())
-            .collect(Collectors.toSet()));
+    User user = userDomainService.createUser(request);
 
     String accessToken = jwtTokenProvider.generateAccessToken(user);
     String refreshToken = jwtTokenProvider.generateRefreshToken(user);
 
     addTokenCookies(response, accessToken, refreshToken);
 
-    try {
-      userProfileClient.createProfile(profile, accessToken);
-      System.out.println(">>> REGISTER CALLED");
-    } catch (Exception e){
-      log.warn("Failed to create profile in user-pservice", e);
-    }
+    var roles = user.getRoles()
+        .stream()
+        .map(r -> r.getName().name())
+        .collect(Collectors.toSet());
+
+    var userCreatedEvent =
+        new UserCreatedEvent(UUID.randomUUID(), Instant.now(), user.getId(),
+            user.getEmail(),
+            user.getFirstName(), user.getLastName(), roles);
+
+      var outboxId = outboxService.saveEvent(TOPIC_USER_CREATED, user.getId().toString(), userCreatedEvent);
+
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+
+      @Override
+      public void afterCommit() {
+        try {
+          outboxPublisher.publishOne(outboxId);
+        } catch (Exception ex) {
+        }
+      }
+    });
 
     return "User has been registered successfully";
   }

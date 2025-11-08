@@ -8,6 +8,9 @@ import java.util.Map;
 public interface RagRepository {
   void insertChunk(RagChunk chunk, String model, float[] vector);
 
+//  batch inserting
+  void insertChunksBatch(List<RagChunk> chunks, String model, List<float[]> vectors);
+
   void deleteByOwner(String ownerType, String ownerId);
 
   //  Top-K by chunk vector of the specific owner

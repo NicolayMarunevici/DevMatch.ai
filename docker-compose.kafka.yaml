@@ -1,0 +1,47 @@
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka
+    ports:
+      - "9092:9092"  # внешний порт для IDE/хоста
+    environment:
+      # KRaft
+      KAFKA_NODE_ID: ${KAFKA_BROKER_ID:-1}
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: ${KAFKA_BROKER_ID:-1}@kafka:9094
+
+      # Идентификатор и сторедж
+      KAFKA_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+      # ДВА РАЗНЫХ ПОРТА для двух listener’ов
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,EXTERNAL://${KAFKA_ADVERTISED_HOST:-localhost}:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # dev-настройки
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8085:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=devmatch
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092  # внутренний listener
+    depends_on: [kafka]
+
+volumes:
+  kafka_data:

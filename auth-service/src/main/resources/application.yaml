@@ -6,10 +6,11 @@ spring:
     url: jdbc:postgresql://localhost:5432/devmatch_auth
     username: postgres
     password: postgres
+
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
+#    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -19,26 +20,39 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+  kafka:
+    # для запуска из IDE на хосте
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    client-id: auth-service
+
+    producer:
+      acks: all
+      retries: 10
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+    admin:
+      fail-fast: true
+      properties:
+        bootstrap.servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
 logging:
   level:
     org.flywaydb: DEBUG
     org.springframework.boot.autoconfigure.flyway: DEBUG
 
-#  security:
-#    oauth2:
-#      client:
-#        registration:
-#          google:
-#            client-id:
-#            client-secret:
-#            scope: profile, email
-#            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationID}"
-#            client-name: Google
+# период опроса outbox-паблишером (мс)
+outbox:
+  publisher:
+    delay: 500
 
 jwt:
   secret: /twA7/Xxl4oC3WNBty3wNL94d/+4/mehRhkatN5lblI=
-  access-token-expiration: 900000 #15 min
-  refresh-token-expiration: 604800000 #7 days
+  access-token-expiration: 900000 # 15 min
+  refresh-token-expiration: 604800000 # 7 days
 
 user-service:
   url: http://localhost:8082

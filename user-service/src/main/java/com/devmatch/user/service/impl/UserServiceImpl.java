@@ -1,44 +1,76 @@
 package com.devmatch.user.service.impl;
 
+import com.devmatch.user.adapter.kafka.listener.UserCreatedListener;
 import com.devmatch.user.dto.CreateUserProfileRequest;
 import com.devmatch.user.dto.UpdateProfileRequest;
+import com.devmatch.user.dto.UserCreatedEvent;
 import com.devmatch.user.dto.UserDto;
 import com.devmatch.user.mapper.UserMapper;
+import com.devmatch.user.model.ProcessedEvents;
 import com.devmatch.user.model.User;
+import com.devmatch.user.repository.ProcessedEventRepository;
 import com.devmatch.user.repository.UserRepository;
 import com.devmatch.user.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserServiceImpl implements UserService {
 
+  Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
+
   private final UserRepository userRepository;
+  private final ProcessedEventRepository eventRepository;
   private final UserMapper userMapper;
 
-  public UserServiceImpl(UserRepository userRepository, UserMapper userMapper) {
+  public UserServiceImpl(UserRepository userRepository, ProcessedEventRepository eventRepository,
+                         UserMapper userMapper) {
     this.userRepository = userRepository;
+    this.eventRepository = eventRepository;
     this.userMapper = userMapper;
   }
 
+  @Transactional
   @Override
-  public void createUserProfile(CreateUserProfileRequest request) {
-    User user = userRepository.findById(request.getId())
+  public void createUserProfile(UserCreatedEvent event) {
+    // idempotency through PK
+    try {
+      eventRepository.save(new ProcessedEvents(event.eventId(), Instant.now()));
+    } catch (DataIntegrityViolationException dup) {
+      logger.info("Event {} already processed by PK, skip", event.eventId());
+      return;
+    }
+
+    User user = userRepository.findById(event.userId())
         .orElseGet(() -> {
           User newUser = new User();
-          newUser.setId(request.getId());
+          newUser.setId(event.userId());
           return newUser;
         });
 
-    user.setEmail(request.getEmail());
-    user.setFirstName(request.getFirstName());
-    user.setLastName(request.getLastName());
-    user.setRole(request.getRole());
+    user.setEmail(event.email());
+    user.setFirstName(event.firstName());
+    user.setLastName(event.lastName());
+    user.setRole(event.roles());
 
-    userRepository.save(user);
+    try {
+      userRepository.save(user);
+    } catch (DataIntegrityViolationException e) {
+      logger.warn("Email '{}' already taken for another user; eventId={}, userId={}",
+          user.getEmail(), event.eventId(), event.userId(), e);
+      return;
+    }
+
+    logger.info("User {} was saved in user-service DB", user.getId());
   }
 
   @Override

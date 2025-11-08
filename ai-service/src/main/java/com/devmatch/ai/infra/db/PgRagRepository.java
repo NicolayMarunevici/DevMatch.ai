@@ -24,20 +24,65 @@ public class PgRagRepository implements RagRepository {
 
   @Override
   public void insertChunk(RagChunk c, String model, float[] vector) {
-    String vec = toPgVector(vector);
     try {
-      String metaJson = om.writeValueAsString(c.meta() == null ? Map.of() : c.meta());
-      jdbc.update("""
-                INSERT INTO rag_chunks (id, owner_type, owner_id, model, dim, vector, text, meta, created_at)
-                VALUES (?,?,?,?,?, ?::vector, ?, ?::jsonb, ?)
-                ON CONFLICT (id) DO UPDATE SET text=EXCLUDED.text, meta=EXCLUDED.meta, vector=EXCLUDED.vector, model=EXCLUDED.model, dim=EXCLUDED.dim
-              """,
-          c.id(), c.ownerType(), c.ownerId(), model, vector.length, vec, c.text(), metaJson,
-          Timestamp.from(
-              Instant.now()));
+      String sql = """
+      INSERT INTO rag_chunks (id, owner_type, owner_id, model, dim, vector, text, meta, created_at)
+      VALUES (?, ?, ?, ?, ?, ?::vector, ?, ?::jsonb, ?)
+      ON CONFLICT (id) DO UPDATE SET
+        owner_type = EXCLUDED.owner_type,
+        owner_id   = EXCLUDED.owner_id,
+        model      = EXCLUDED.model,
+        dim        = EXCLUDED.dim,
+        vector     = EXCLUDED.vector,
+        text       = EXCLUDED.text,
+        meta       = EXCLUDED.meta
+    """;
+      jdbc.update(sql, ps -> {
+        ps.setString(1, c.id());
+        ps.setString(2, c.ownerType());
+        ps.setString(3, c.ownerId());
+        ps.setString(4, model);
+        ps.setInt(5, vector.length);
+        ps.setString(6, toPgVector(vector));
+        ps.setString(7, c.text());
+        ps.setString(8, writeMeta(c.meta()));
+        ps.setTimestamp(9, Timestamp.from(Instant.now()));
+      });
     } catch (Exception e) {
       throw new IllegalStateException("RAG insert failed", e);
     }
+  }
+
+  @Override
+  public void insertChunksBatch(List<RagChunk> chunks, String model, List<float[]> vectors) {
+    if (chunks.size() != vectors.size()) {
+      throw new IllegalArgumentException("chunks.size != vectors.size");
+    }
+    String sql = """
+      INSERT INTO rag_chunks (id, owner_type, owner_id, model, dim, vector, text, meta, created_at)
+      VALUES (?, ?, ?, ?, ?, ?::vector, ?, ?::jsonb, ?)
+      ON CONFLICT (id) DO UPDATE SET
+        owner_type = EXCLUDED.owner_type,
+        owner_id   = EXCLUDED.owner_id,
+        model      = EXCLUDED.model,
+        dim        = EXCLUDED.dim,
+        vector     = EXCLUDED.vector,
+        text       = EXCLUDED.text,
+        meta       = EXCLUDED.meta
+    """;
+    jdbc.batchUpdate(sql, chunks, 500, (ps, c) -> {
+      int idx = chunks.indexOf(c);
+      float[] v = vectors.get(idx);
+      ps.setString(1, c.id());
+      ps.setString(2, c.ownerType());
+      ps.setString(3, c.ownerId());
+      ps.setString(4, model);
+      ps.setInt(5, v.length);
+      ps.setString(6, toPgVector(v));
+      ps.setString(7, c.text());
+      ps.setString(8, writeMeta(c.meta()));
+      ps.setTimestamp(9, Timestamp.from(Instant.now()));
+    });
   }
 
   @Override
@@ -49,18 +94,22 @@ public class PgRagRepository implements RagRepository {
   public List<RagChunk> topKByVector(String ownerType, String ownerId, float[] queryVec, int k,
                                      Map<String, String> filters) {
     String sql = """
-          SELECT id, owner_type, owner_id, text, meta
-          FROM rag_chunks
-          WHERE owner_type=? AND owner_id=? %s
-          ORDER BY vector <#> ?::vector
-          LIMIT ?
-        """.formatted(whereFilters(filters));
+      SELECT id, owner_type, owner_id, text, meta,
+             1 - (vector <#> ?::vector) AS score
+      FROM rag_chunks
+      WHERE owner_type = ? AND owner_id = ?
+      %s
+      ORDER BY vector <#> ?::vector
+      LIMIT ?
+    """.formatted(whereFilters(filters));
+    String vec = toPgVector(queryVec);
     return jdbc.query(sql,
         ps -> {
-          ps.setString(1, ownerType);
-          ps.setString(2, ownerId);
-          ps.setObject(3, queryVec);
-          ps.setInt(4, k);
+          ps.setString(1, vec);
+          ps.setString(2, ownerType);
+          ps.setString(3, ownerId);
+          ps.setString(4, vec);
+          ps.setInt(5, k);
         },
         (rs, rn) -> new RagChunk(
             rs.getString("id"),
@@ -68,27 +117,28 @@ public class PgRagRepository implements RagRepository {
             rs.getString("owner_id"),
             rs.getString("text"),
             readMeta(rs.getString("meta"))
-        ));
+        )
+    );
   }
 
   @Override
   public List<RagChunk> topMByFts(String ownerType, String ownerId, String query, int m,
                                   Map<String, String> filters) {
     String sql = """
-          SELECT id, owner_type, owner_id, text, meta
-          FROM rag_chunks
-          WHERE owner_type=? AND owner_id=? %s
-          ORDER BY to_tsvector('simple', text) @@ plainto_tsquery('simple', ?) DESC,
-                   ts_rank_cd(to_tsvector('simple', text), plainto_tsquery('simple', ?)) DESC
-          LIMIT ?
-        """.formatted(whereFilters(filters));
+      SELECT id, owner_type, owner_id, text, meta
+      FROM rag_chunks
+      WHERE owner_type = ? AND owner_id = ?
+        AND to_tsvector('simple', text) @@ plainto_tsquery('simple', ?)
+        %s
+      ORDER BY id
+      LIMIT ?
+    """.formatted(whereFilters(filters));
     return jdbc.query(sql,
         ps -> {
           ps.setString(1, ownerType);
           ps.setString(2, ownerId);
           ps.setString(3, query);
-          ps.setString(4, query);
-          ps.setInt(5, m);
+          ps.setInt(4, m);
         },
         (rs, rn) -> new RagChunk(
             rs.getString("id"),
@@ -96,20 +146,29 @@ public class PgRagRepository implements RagRepository {
             rs.getString("owner_id"),
             rs.getString("text"),
             readMeta(rs.getString("meta"))
-        ));
+        )
+    );
   }
 
+  /* --- helpers --- */
+
   private static String whereFilters(Map<String, String> f) {
-    if (f == null || f.isEmpty()) {
-      return "";
-    }
-    // simple schema: meta->>'key'='value'
+    if (f == null || f.isEmpty()) return "";
     StringBuilder sb = new StringBuilder();
-    for (String k : f.keySet()) {
-      sb.append(" AND meta->>'").append(k).append("'='").append(f.get(k).replace("'", "''"))
+    for (Map.Entry<String,String> e : f.entrySet()) {
+      // meta->>'key' = 'value'
+      sb.append(" AND meta->>'")
+          .append(e.getKey().replace("'", "''"))
+          .append("'='")
+          .append(e.getValue().replace("'", "''"))
           .append("'");
     }
     return sb.toString();
+  }
+
+  private String writeMeta(Map<String, String> meta) {
+    try { return om.writeValueAsString(meta == null ? Map.of() : meta); }
+    catch (Exception e) { return "{}"; }
   }
 
   private Map<String, String> readMeta(String json) {

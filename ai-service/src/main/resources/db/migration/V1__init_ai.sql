@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS embeddings (
                                           entity_id   TEXT NOT NULL,
                                           model       TEXT NOT NULL,
                                           dim         INT  NOT NULL,
-                                          vector      vector(1024) NOT NULL, -- подставь реальную размерность модели
+                                          vector      vector(3072) NOT NULL, -- подставь реальную размерность модели
                                           created_at  timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_embeddings_entity ON embeddings(entity_type, entity_id);

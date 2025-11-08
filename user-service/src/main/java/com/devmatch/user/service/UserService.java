@@ -2,6 +2,7 @@ package com.devmatch.user.service;
 
 import com.devmatch.user.dto.CreateUserProfileRequest;
 import com.devmatch.user.dto.UpdateProfileRequest;
+import com.devmatch.user.dto.UserCreatedEvent;
 import com.devmatch.user.dto.UserDto;
 import java.util.List;
 import java.util.Set;
@@ -13,6 +14,6 @@ public interface UserService {
   List<UserDto> getAllByRole(Set<String> role);
 
   List<UserDto> searchByTechStack(String tech);
-  void createUserProfile(CreateUserProfileRequest request);
+  void createUserProfile(UserCreatedEvent event);
   UserDto updateProfile(Long userId, UpdateProfileRequest request);
 }

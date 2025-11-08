@@ -1,9 +1,12 @@
 package com.devmatch.ai.usecase;
 
 
+import com.devmatch.ai.domain.Explanation;
 import com.devmatch.ai.domain.RagChunk;
 import com.devmatch.ai.ports.ChatPort;
 import com.devmatch.ai.util.PromptBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -15,27 +18,35 @@ import org.springframework.stereotype.Service;
 public class ExplainWithRagUseCase {
   private final RetrieveContextUseCase retriever;
   private final ChatPort chat;
+  private final ObjectMapper om;
 
-  public ExplainWithRagUseCase(RetrieveContextUseCase retriever, ChatPort chat) {
+  public ExplainWithRagUseCase(RetrieveContextUseCase retriever, ChatPort chat, ObjectMapper om) {
     this.retriever = retriever;
     this.chat = chat;
+    this.om = om;
   }
 
-  public String explainUserVacancy(String userId, String vacancyId) {
+  public Explanation explainUserVacancy(String userId, String vacancyId) {
     // контекст с двух сторон
-    List<RagChunk>
-        userCtx =
-        retriever.retrieve("USER", userId, "Опыт и ключевые навыки кандидата", 6, 6, 5, null);
-    List<RagChunk> vacCtx =
-        retriever.retrieve("VACANCY", vacancyId, "Основные требования и обязанности вакансии", 6, 6,
-            5, null);
-    List<RagChunk> ctx = new java.util.ArrayList<>(userCtx);
+    List<RagChunk> userCtx = retriever.retrieve("USER", userId,
+        "Опыт и ключевые навыки кандидата", 6, 6, 5, null);
+    List<RagChunk> vacCtx  = retriever.retrieve("VACANCY", vacancyId,
+        "Основные требования и обязанности вакансии", 6, 6, 5, null);
+
+    List<RagChunk> ctx = new ArrayList<>(userCtx);
     ctx.addAll(vacCtx);
 
-    String sys = PromptBuilder.system();
+    String sys  = PromptBuilder.system();
     String user = PromptBuilder.user(ctx,
         "Объясни, почему кандидат подходит под вакансию. Дай 3–5 bullets и список citations (ID чанков).");
-    // возвращаем сырой JSON — фронт/сервис может его валидировать/сохранить
-    return chat.completeJson(sys, user);
+
+    String json = chat.completeJson(sys, user);
+    try {
+      return om.readValue(json, Explanation.class);
+    } catch (Exception e) {
+      // graceful degradation
+      List<String> ids = ctx.stream().map(RagChunk::id).toList();
+      return Explanation.fallback(ids);
+    }
   }
 }

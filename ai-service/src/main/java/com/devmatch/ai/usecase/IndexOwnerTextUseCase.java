@@ -7,6 +7,7 @@ import com.devmatch.ai.ports.RagRepository;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Разрезает текст → эмбеддит чанки → пишет в БД (перезапись owner).
@@ -23,12 +24,20 @@ public class IndexOwnerTextUseCase {
     this.repo = repo;
   }
 
+  @Transactional
   public void reindex(String ownerType, String ownerId, String rawText, Map<String, String> meta) {
+//    remove old
     repo.deleteByOwner(ownerType, ownerId);
+//    prepare chanks
     List<RagChunk> chunks = chunker.chunk(ownerType, ownerId, rawText, meta);
-    for (RagChunk c : chunks) {
-      float[] vec = embed.embed(c.text());
-      repo.insertChunk(c, embed.modelName(), vec);
+
+    if(chunks.isEmpty()){
+      return;
     }
+
+    List<String> texts = chunks.stream().map(RagChunk::text).toList();
+    var vectors = embed.embedBatch(texts);
+
+    repo.insertChunksBatch(chunks, embed.modelName(), vectors);
   }
 }
